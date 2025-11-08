@@ -1,0 +1,41 @@
+### Get all certificates for user 1
+GET http://localhost:3000/api/certificates/user/1
+Content-Type: application/json
+
+###
+
+### Create new certificate
+POST http://localhost:3000/api/certificates
+Content-Type: application/json
+
+{
+  "title": "Full Stack Developer Bootcamp",
+  "issuedBy": "TransTRACK Academy",
+  "issueDate": "2025-11-01T00:00:00.000Z",
+  "userId": 1
+}
+
+###
+
+### Get all certificates
+GET http://localhost:3000/api/certificate
+
+
+###
+curl http://localhost:3000/api/courses
+
+###
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "naruto@konoha.com",
+    "password": "student123"
+  }'
+
+###
+curl -X POST http://localhost:3000/api/enrollments \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": 2,
+    "courseId": 1
+  }'
