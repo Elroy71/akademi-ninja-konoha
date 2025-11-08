@@ -2,6 +2,10 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
+// Layouts
+import DashboardLayout from '../layouts/DashboardLayout';
+import GuestLayout from '../layouts/GuestLayout';
+
 // Import pages
 import Home from '../pages/Home';
 import Login from '../pages/Login';
@@ -21,53 +25,99 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
+// Guest Route Component (redirect to dashboard if already logged in)
+const GuestRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  return !isAuthenticated ? children : <Navigate to="/dashboard" />;
+};
+
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      {/* Public Routes with GuestLayout */}
+      <Route path="/" element={
+        <GuestLayout>
+          <Home />
+        </GuestLayout>
+      } />
       
-      {/* Protected Routes */}
+      <Route path="/login" element={
+        <GuestRoute>
+          <GuestLayout>
+            <Login />
+          </GuestLayout>
+        </GuestRoute>
+      } />
+      
+      <Route path="/register" element={
+        <GuestRoute>
+          <GuestLayout>
+            <Register />
+          </GuestLayout>
+        </GuestRoute>
+      } />
+      
+      {/* Protected Routes with DashboardLayout */}
       <Route path="/dashboard" element={
         <ProtectedRoute>
-          <Dashboard />
+          <DashboardLayout>
+            <Dashboard />
+          </DashboardLayout>
         </ProtectedRoute>
       } />
+      
       <Route path="/courses" element={
         <ProtectedRoute>
-          <Courses />
+          <DashboardLayout>
+            <Courses />
+          </DashboardLayout>
         </ProtectedRoute>
       } />
+      
       <Route path="/course/:id" element={
         <ProtectedRoute>
-          <CourseDetail />
+          <DashboardLayout>
+            <CourseDetail />
+          </DashboardLayout>
         </ProtectedRoute>
       } />
+      
+      {/* CoursePlayer without sidebar (fullscreen) */}
       <Route path="/learn/:id" element={
         <ProtectedRoute>
           <CoursePlayer />
         </ProtectedRoute>
       } />
+      
       <Route path="/exam/:id" element={
         <ProtectedRoute>
-          <ExamPage />
+          <DashboardLayout>
+            <ExamPage />
+          </DashboardLayout>
         </ProtectedRoute>
       } />
+      
       <Route path="/my-courses" element={
         <ProtectedRoute>
-          <MyCourses />
+          <DashboardLayout>
+            <MyCourses />
+          </DashboardLayout>
         </ProtectedRoute>
       } />
+      
       <Route path="/certificates" element={
         <ProtectedRoute>
-          <MyCertificates />
+          <DashboardLayout>
+            <MyCertificates />
+          </DashboardLayout>
         </ProtectedRoute>
       } />
+      
       <Route path="/profile" element={
         <ProtectedRoute>
-          <Profile />
+          <DashboardLayout>
+            <Profile />
+          </DashboardLayout>
         </ProtectedRoute>
       } />
       
