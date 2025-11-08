@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import authService from '../services/authService';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -53,20 +54,27 @@ const Login = () => {
     if (!validateForm()) return;
     
     setLoading(true);
+    setErrors({});
     
-    // Simulasi API call
-    setTimeout(() => {
-      const userData = {
-        id: 1,
-        name: 'Naruto Uzumaki',
-        email: formData.email,
-        ninjaRank: 'Genin'
-      };
+    try {
+      // Call API
+      const response = await authService.login(formData);
       
-      login(userData);
-      navigate('/dashboard');
+      if (response.success) {
+        // Save to context
+        login(response.data);
+        
+        // Redirect to dashboard
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrors({
+        email: error.message || 'Email atau password salah'
+      });
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (

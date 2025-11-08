@@ -1,58 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, Clock, Award, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import enrollmentService from '../services/enrollmentService';
 
 const MyCourses = () => {
-  const [filter, setFilter] = useState('all'); // all, inprogress, completed
+  const { user } = useAuth();
+  const [filter, setFilter] = useState('all');
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Dummy enrolled courses
-  const courses = [
-    { 
-      id: 1, 
-      title: 'Dasar-dasar Ninjutsu', 
-      rank: 'Genin', 
-      progress: 75, 
-      completed: false,
-      duration: '4 jam',
-      lastAccessed: '2 jam yang lalu'
-    },
-    { 
-      id: 2, 
-      title: 'Genjutsu untuk Pemula', 
-      rank: 'Genin', 
-      progress: 45, 
-      completed: false,
-      duration: '3 jam',
-      lastAccessed: '1 hari yang lalu'
-    },
-    { 
-      id: 3, 
-      title: 'Teknik Chakra Control', 
-      rank: 'Chunin', 
-      progress: 30, 
-      completed: false,
-      duration: '5 jam',
-      lastAccessed: '3 hari yang lalu'
-    },
-    { 
-      id: 4, 
-      title: 'Pengenalan Taijutsu', 
-      rank: 'Genin', 
-      progress: 100, 
-      completed: true,
-      duration: '3 jam',
-      lastAccessed: '1 minggu yang lalu'
-    },
-    { 
-      id: 5, 
-      title: 'Strategi Tim Ninja', 
-      rank: 'Chunin', 
-      progress: 100, 
-      completed: true,
-      duration: '4 jam',
-      lastAccessed: '2 minggu yang lalu'
+  useEffect(() => {
+    if (user) {
+      fetchEnrollments();
     }
-  ];
+  }, [user]);
+
+  const fetchEnrollments = async () => {
+    try {
+      const response = await enrollmentService.getUserEnrollments(user.id);
+      if (response.success) {
+        setCourses(response.data.map(enrollment => ({
+          ...enrollment.course,
+          enrolledAt: enrollment.enrolledAt,
+          lastAccessed: new Date(enrollment.enrolledAt).toLocaleDateString('id-ID')
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching enrollments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredCourses = courses.filter(course => {
     if (filter === 'inprogress') return !course.completed;
@@ -75,6 +54,17 @@ const MyCourses = () => {
     };
     return colors[rank] || 'bg-gray-100 text-gray-700';
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-amber-700 font-semibold">Memuat kursus Anda...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-6">

@@ -1,0 +1,126 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String         @db.VarChar(100)
+  email         String         @unique @db.VarChar(150)
+  passwordHash  String         @map("password_hash") @db.VarChar(255)
+  role          String         @default("student") @db.VarChar(50)
+  ninjaRank     String         @default("Genin") @map("ninja_rank") @db.VarChar(50)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  
+  enrollments   Enrollment[]
+  progress      Progress[]
+  certificates  Certificate[]
+  examResults   ExamResult[]
+  
+  @@map("users")
+}
+
+model Course {
+  id          Int           @id @default(autoincrement())
+  title       String        @db.VarChar(200)
+  rankLevel   String        @map("rank_level") @db.VarChar(50)
+  description String?       @db.Text
+  duration    String?       @db.VarChar(50)
+  modules     Int           @default(0)
+  price       Decimal       @default(0) @db.Decimal(10, 2)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  
+  contents     Content[]
+  enrollments  Enrollment[]
+  progress     Progress[]
+  certificates Certificate[]
+  exams        Exam[]
+  
+  @@map("courses")
+}
+
+model Content {
+  id       Int     @id @default(autoincrement())
+  courseId Int     @map("course_id")
+  title    String  @db.VarChar(200)
+  type     String  @db.VarChar(50)
+  url      String? @db.VarChar(255)
+  body     String? @db.Text
+  order    Int     @default(0)
+  
+  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@map("contents")
+}
+
+model Enrollment {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  courseId  Int      @map("course_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model Progress {
+  id       Int     @id @default(autoincrement())
+  userId   Int     @map("user_id")
+  courseId Int     @map("course_id")
+  percent  Decimal @default(0) @db.Decimal(5, 2)
+  
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, courseId])
+  @@map("progress")
+}
+
+model Certificate {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  courseId  Int      @map("course_id")
+  issuedAt  DateTime @default(now()) @map("issued_at")
+  certificateNumber String @unique @map("certificate_number") @db.VarChar(100)
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, courseId])
+  @@map("certificates")
+}
+
+model Exam {
+  id          Int          @id @default(autoincrement())
+  courseId    Int          @map("course_id")
+  title       String       @db.VarChar(200)
+  passingScore Int         @map("passing_score")
+  questions   Json
+  
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  results     ExamResult[]
+  
+  @@map("exams")
+}
+
+model ExamResult {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  examId    Int      @map("exam_id")
+  score     Int
+  passed    Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  
+  @@map("exam_results")
+}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -60,19 +61,34 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
     
     setLoading(true);
+    setErrors({});
     
-    setTimeout(() => {
-      console.log('Register data:', formData);
+    try {
+      // Call API
+      const response = await authService.register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      });
+      
+      if (response.success) {
+        alert('Registrasi berhasil! Silakan login');
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Register error:', error);
+      setErrors({
+        email: error.message || 'Terjadi kesalahan saat registrasi'
+      });
+    } finally {
       setLoading(false);
-      alert('Registrasi berhasil! Silakan login');
-      navigate('/login');
-    }, 1500);
+    }
   };
 
   const passwordStrength = () => {

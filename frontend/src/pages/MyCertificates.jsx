@@ -1,34 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Award, Download, Share2, Calendar, CheckCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import certificateService from '../services/certificateService';
 
 const MyCertificates = () => {
-  // Dummy certificates data
-  const certificates = [
-    {
-      id: 1,
-      courseTitle: 'Pengenalan Taijutsu',
-      rank: 'Genin',
-      completedDate: '15 Januari 2025',
-      certificateNumber: 'KNH-2025-001-GEN',
-      instructor: 'Might Guy'
-    },
-    {
-      id: 2,
-      courseTitle: 'Strategi Tim Ninja',
-      rank: 'Chunin',
-      completedDate: '1 Januari 2025',
-      certificateNumber: 'KNH-2025-002-CHU',
-      instructor: 'Shikamaru Nara'
-    },
-    {
-      id: 3,
-      courseTitle: 'Dasar-dasar Chakra',
-      rank: 'Genin',
-      completedDate: '20 Desember 2024',
-      certificateNumber: 'KNH-2024-089-GEN',
-      instructor: 'Kakashi Hatake'
+  const { user } = useAuth();
+  const [certificates, setCertificates] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchCertificates();
     }
-  ];
+  }, [user]);
+
+  const fetchCertificates = async () => {
+    try {
+      const response = await certificateService.getUserCertificates(user.id);
+      if (response.success) {
+        setCertificates(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching certificates:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getRankColor = (rank) => {
     const colors = {
@@ -39,6 +36,17 @@ const MyCertificates = () => {
     };
     return colors[rank] || 'from-gray-600 to-gray-700';
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-amber-700 font-semibold">Memuat sertifikat...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-6">
@@ -67,7 +75,7 @@ const MyCertificates = () => {
           {certificates.map((cert) => (
             <div key={cert.id} className="bg-white rounded-2xl shadow-lg border-2 border-amber-200 overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1">
               {/* Certificate Header */}
-              <div className={`h-32 bg-gradient-to-br ${getRankColor(cert.rank)} relative overflow-hidden`}>
+              <div className={`h-32 bg-gradient-to-br ${getRankColor(cert.course.rankLevel)} relative overflow-hidden`}>
                 <div className="absolute inset-0 opacity-10">
                   <div className="absolute top-4 left-4 text-6xl text-white">木</div>
                   <div className="absolute bottom-4 right-4 text-6xl text-white">証</div>
@@ -81,9 +89,9 @@ const MyCertificates = () => {
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-amber-950 mb-2">{cert.courseTitle}</h3>
+                    <h3 className="text-lg font-bold text-amber-950 mb-2">{cert.course.title}</h3>
                     <span className="inline-block px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
-                      {cert.rank}
+                      {cert.course.rankLevel}
                     </span>
                   </div>
                   <CheckCircle className="text-green-600 flex-shrink-0" size={24} />
@@ -92,15 +100,19 @@ const MyCertificates = () => {
                 <div className="space-y-2 text-sm text-amber-700 mb-4">
                   <div className="flex items-center">
                     <Calendar size={16} className="mr-2" />
-                    <span>{cert.completedDate}</span>
+                    <span>{new Date(cert.issuedAt).toLocaleDateString('id-ID', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}</span>
                   </div>
                   <div>
                     <p className="text-xs text-amber-600">No. Sertifikat</p>
                     <p className="font-mono font-bold text-amber-950">{cert.certificateNumber}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-amber-600">Instruktur</p>
-                    <p className="font-semibold text-amber-900">{cert.instructor}</p>
+                    <p className="text-xs text-amber-600">Penerima</p>
+                    <p className="font-semibold text-amber-900">{cert.user.name}</p>
                   </div>
                 </div>
 

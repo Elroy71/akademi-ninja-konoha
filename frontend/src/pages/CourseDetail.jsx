@@ -1,47 +1,70 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Clock, Award, Users, CheckCircle, Play, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import courseService from '../services/courseService';
+import enrollmentService from '../services/enrollmentService';
 
 const CourseDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [course, setCourse] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [enrolling, setEnrolling] = useState(false);
   const [enrolled, setEnrolled] = useState(false);
 
-  // Dummy course data
-  const course = {
-    id: parseInt(id),
-    title: 'Dasar-dasar Ninjutsu',
-    rank: 'Genin',
-    duration: '4 jam',
-    modules: 12,
-    enrolled: 234,
-    description: 'Pelajari fundamental teknik ninjutsu dari dasar. Kursus ini dirancang khusus untuk ninja pemula yang ingin memahami chakra, hand seals, dan teknik-teknik dasar yang akan menjadi fondasi perjalanan ninja-mu.',
-    instructor: 'Kakashi Hatake',
-    whatYouLearn: [
-      'Memahami konsep dasar chakra dan kontrolnya',
-      'Menguasai 12 hand seals fundamental',
-      'Teknik transformasi dan substitusi dasar',
-      'Menerapkan strategi pertempuran basic',
-      'Membangun stamina dan ketahanan fisik'
-    ],
-    syllabus: [
-      { id: 1, title: 'Pengenalan Ninjutsu', duration: '20 menit', type: 'video' },
-      { id: 2, title: 'Chakra: Sumber Kekuatan Ninja', duration: '25 menit', type: 'video' },
-      { id: 3, title: 'Hand Seals Dasar (Part 1)', duration: '30 menit', type: 'video' },
-      { id: 4, title: 'Hand Seals Dasar (Part 2)', duration: '30 menit', type: 'video' },
-      { id: 5, title: 'Teknik Transformasi', duration: '25 menit', type: 'video' },
-      { id: 6, title: 'Teknik Substitusi', duration: '25 menit', type: 'video' },
-      { id: 7, title: 'Quiz: Teori Dasar Ninjutsu', duration: '15 menit', type: 'quiz' },
-      { id: 8, title: 'Latihan Praktik Hand Seals', duration: '40 menit', type: 'practice' },
-      { id: 9, title: 'Strategi Pertempuran Basic', duration: '30 menit', type: 'video' },
-      { id: 10, title: 'Stamina dan Ketahanan', duration: '20 menit', type: 'video' },
-      { id: 11, title: 'Ujian Akhir', duration: '30 menit', type: 'exam' },
-      { id: 12, title: 'Sertifikat Penyelesaian', duration: '-', type: 'certificate' }
-    ]
+  useEffect(() => {
+    fetchCourseDetail();
+    if (user) {
+      checkEnrollmentStatus();
+    }
+  }, [id, user]);
+
+  const fetchCourseDetail = async () => {
+    try {
+      const response = await courseService.getCourseById(id);
+      if (response.success) {
+        setCourse(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching course:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEnroll = () => {
-    setEnrolled(true);
-    alert('Berhasil mendaftar! Kamu sekarang bisa mulai belajar.');
+  const checkEnrollmentStatus = async () => {
+    try {
+      const response = await enrollmentService.checkEnrollment(user.id, id);
+      if (response.success) {
+        setEnrolled(response.data.isEnrolled);
+      }
+    } catch (error) {
+      console.error('Error checking enrollment:', error);
+    }
+  };
+
+  const handleEnroll = async () => {
+    if (!user) {
+      alert('Silakan login terlebih dahulu');
+      navigate('/login');
+      return;
+    }
+
+    setEnrolling(true);
+    try {
+      const response = await enrollmentService.enrollCourse(user.id, id);
+      if (response.success) {
+        setEnrolled(true);
+        alert('Berhasil mendaftar! Kamu sekarang bisa mulai belajar.');
+      }
+    } catch (error) {
+      console.error('Error enrolling:', error);
+      alert(error.message || 'Gagal mendaftar kursus');
+    } finally {
+      setEnrolling(false);
+    }
   };
 
   const getRankColor = (rank) => {
@@ -64,6 +87,30 @@ const CourseDetail = () => {
       default: return <BookOpen size={18} />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-amber-700 font-semibold">Memuat detail kursus...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 font-semibold mb-4">Kursus tidak ditemukan</p>
+          <Link to="/courses" className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">
+            Kembali ke Daftar Kursus
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-6">
@@ -102,31 +149,27 @@ const CourseDetail = () => {
                       </div>
                     </div>
                   </div>
-                  <span className={`px-4 py-2 rounded-full font-semibold border-2 ${getRankColor(course.rank)}`}>
-                    {course.rank}
+                  <span className={`px-4 py-2 rounded-full font-semibold border-2 ${getRankColor(course.rankLevel)}`}>
+                    {course.rankLevel}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* What You'll Learn */}
+            {course.description && (
             <div className="bg-white rounded-2xl shadow-lg border-2 border-amber-200 p-8 mb-6">
-              <h2 className="text-2xl font-bold text-amber-950 mb-6">Yang Akan Kamu Pelajari</h2>
-              <ul className="space-y-3">
-                {course.whatYouLearn.map((item, idx) => (
-                  <li key={idx} className="flex items-start">
-                    <CheckCircle className="text-green-600 mr-3 mt-1 flex-shrink-0" size={20} />
-                    <span className="text-amber-900">{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <h2 className="text-2xl font-bold text-amber-950 mb-6">Tentang Kursus Ini</h2>
+              <p className="text-amber-900">{course.description}</p>
             </div>
+            )}
 
             {/* Syllabus */}
+            {course.contents && course.contents.length > 0 && (
             <div className="bg-white rounded-2xl shadow-lg border-2 border-amber-200 p-8">
               <h2 className="text-2xl font-bold text-amber-950 mb-6">Materi Kursus</h2>
               <div className="space-y-3">
-                {course.syllabus.map((module) => (
+                {course.contents.map((module) => (
                   <div key={module.id} className="flex items-center justify-between p-4 border-2 border-amber-100 rounded-lg hover:border-amber-300 transition">
                     <div className="flex items-center flex-1">
                       <div className="mr-4">
@@ -134,13 +177,14 @@ const CourseDetail = () => {
                       </div>
                       <div>
                         <p className="font-semibold text-amber-950">{module.title}</p>
-                        <p className="text-sm text-amber-700">{module.duration}</p>
+                        <p className="text-sm text-amber-700">{module.type}</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -154,9 +198,12 @@ const CourseDetail = () => {
               {!enrolled ? (
                 <button
                   onClick={handleEnroll}
-                  className="w-full py-4 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg font-bold text-lg hover:from-amber-700 hover:to-amber-800 shadow-lg transition transform hover:scale-105 mb-4"
+                  disabled={enrolling}
+                  className={`w-full py-4 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg font-bold text-lg hover:from-amber-700 hover:to-amber-800 shadow-lg transition transform ${
+                    enrolling ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105'
+                  } mb-4`}
                 >
-                  Daftar Sekarang
+                  {enrolling ? 'Mendaftar...' : 'Daftar Sekarang'}
                 </button>
               ) : (
                 <Link

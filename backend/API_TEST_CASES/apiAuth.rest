@@ -1,0 +1,53 @@
+# ✅ TC-AUTH-01: Register New User (Success)
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+    "name": "Sakura Haruno",
+    "email": "sakura@konoha.com",
+    "password": "sakura123"
+}
+
+###
+# ❌ TC-AUTH-02: Register with Existing Email (Fail)
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+    "name": "Test User",
+    "email": "naruto@konoha.com",
+    "password": "test123"
+}
+
+###
+# ❌ TC-AUTH-03: Register with Missing Fields (Fail)
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+    "name": "Test User"
+}
+
+###
+# ✅ TC-AUTH-04: Login Success
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+    "email": "naruto@konoha.com",
+    "password": "student123"
+}
+
+###
+# ❌ TC-AUTH-05: Login with Wrong Password (Fail)
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+    "email": "naruto@konoha.com",
+    "password": "wrongpassword"
+}
+
+###
+# ✅ TC-AUTH-06: Get User Info
+GET http://localhost:3000/api/auth/me/2

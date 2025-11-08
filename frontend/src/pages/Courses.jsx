@@ -1,20 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, BookOpen, Clock, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import courseService from '../services/courseService';
 
 const Courses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRank, setSelectedRank] = useState('all');
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Dummy courses data
-  const courses = [
-    { id: 1, title: 'Dasar-dasar Ninjutsu', rank: 'Genin', duration: '4 jam', modules: 12, enrolled: 234 },
-    { id: 2, title: 'Genjutsu untuk Pemula', rank: 'Genin', duration: '3 jam', modules: 8, enrolled: 189 },
-    { id: 3, title: 'Teknik Chakra Control', rank: 'Chunin', duration: '5 jam', modules: 15, enrolled: 156 },
-    { id: 4, title: 'Taijutsu Advanced', rank: 'Chunin', duration: '6 jam', modules: 18, enrolled: 98 },
-    { id: 5, title: 'Strategi Pertempuran Jonin', rank: 'Jonin', duration: '8 jam', modules: 24, enrolled: 67 },
-    { id: 6, title: 'Kepemimpinan Hokage', rank: 'Hokage', duration: '10 jam', modules: 30, enrolled: 45 }
-  ];
+  // Fetch courses from API
+  useEffect(() => {
+    fetchCourses();
+  }, [selectedRank]);
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      const response = await courseService.getAllCourses(selectedRank);
+      
+      if (response.success) {
+        setCourses(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+      setError('Gagal memuat kursus');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const ranks = ['all', 'Genin', 'Chunin', 'Jonin', 'Hokage'];
 
@@ -33,6 +48,33 @@ const Courses = () => {
     };
     return colors[rank] || 'bg-gray-100 text-gray-700';
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-amber-700 font-semibold">Memuat kursus...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 font-semibold mb-4">{error}</p>
+          <button 
+            onClick={fetchCourses}
+            className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-6">
@@ -95,12 +137,12 @@ const Courses = () => {
               <div className="p-6">
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-xl font-bold text-amber-950 flex-1">{course.title}</h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRankColor(course.rank)}`}>
-                    {course.rank}
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRankColor(course.rankLevel)}`}>
+                    {course.rankLevel}
                   </span>
                 </div>
 
-                <div className="space-y-2 mb-4">
+                  <div className="space-y-2 mb-4">
                   <div className="flex items-center text-amber-700 text-sm">
                     <Clock size={16} className="mr-2" />
                     {course.duration} • {course.modules} modul
